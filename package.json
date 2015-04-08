@@ -1,0 +1,20 @@
+{
+	"name":"response-builder",
+	"description":"Building nodejs response with ease",
+	"version":"0.0.1",
+	"keywords":["response","builder","nodejs","error", "logger"],
+	"repository":{
+		"type":"git",
+		"url":"https://github.com/nodeofcode/response-builder.git"
+	},
+	"engines":{
+		"node":">=0.6.0"
+	},
+	"dependencies":{
+	},
+	"licenses":[{
+		"type":"MIT",
+		"url":"http://www.opensource.org/licenses/MIT"
+	}],
+	"main":"index"
+}
