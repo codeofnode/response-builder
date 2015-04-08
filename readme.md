@@ -38,6 +38,9 @@ After :
 ```javascript
     MongooseModel.get({ _id : some_id }, RB.build(res).all);  // where RB = require('response-builder')
 ```
+## Install
+
+    npm install response-builder -g
 
 ## Stay tuned for API Documentation ...
 
