@@ -36,11 +36,11 @@ Before :
 ```
 After :
 ```javascript
-    MongooseModel.get({ _id : some_id }, RB.build(res).all);  // where RB = require('response-builder')
+    MongooseModel.get({ _id : some_id }, RB.build(res).all);  // where RB = require('rb')
 ```
 ## Install
 
-    npm install response-builder -g
+    npm install rb -g
 
 ## Stay tuned for API Documentation ...
 
