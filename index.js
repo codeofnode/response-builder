@@ -26,7 +26,7 @@ var options = {
   successCallback : false,
   filterProperties : false,
   //preProcessError : function(err){ return err; }, ADDED BELOW
-  preProcessSuccess : function(result){ return result; },
+  preProcessSuccess : false,
   attachement : false,
   noResponseBody : false,
   version : false,
@@ -115,18 +115,19 @@ ResponseBuilder.prototype.error = function(err, code, status){
       }
     }
   };
-  if(this.logLevel > 1) this.logger(this.requestId, err);
-  err = util.getString(this.preProcessError, [err]);
+  if(util.isFunction(this.logger) && this.logLevel > 1) this.logger(this.requestId, err);
+  if(util.isFunction(this.preProcessError)) err = util.getString(this.preProcessError, [err]);
   if(err === '_d') err = this.defaultErrorMessage;
   this.handleFour('errorStatus', errorStatus);
   if(util.isString(this.errorKey)){
     var newError = {};
-    newError[this.errorKey] = util.cloneObject(err);
+    if(err) newError[this.errorKey] = util.cloneObject(err);
     err = newError;
     if(this.addRequestIdWhen > 1) err.requestId = this.requestId;
     this.adding(err, [this.addToError, addToError]);
     if(util.isString(this.errorCodeKey) && (errorCode || this.errorCode)){
-      err[this.errorCodeKey] = util.getString((errorCode || this.errorCode), [err, this.req]);
+      var erc = util.getString((errorCode || this.errorCode), [err, this.req]);
+      if(util.isString(erc)) err[this.errorCodeKey] = erc;
     }
     if(util.isFound(this.res, 'json')) this.res.json(err);
     else this.res.send(util.stringify(err));
@@ -154,8 +155,8 @@ ResponseBuilder.prototype.handleFour = function(or, statusCode){
 };
 
 ResponseBuilder.prototype.status = function(or, statusCode){
-  if(util.isFound(this.res, 'status')) this.res.status(statusCode || this[or]);
-  else this.res.statusCode = statusCode || this[or];
+  if(util.isFound(this.res, 'status')) this.res.status(statusCode || this[or] || 304);
+  else this.res.statusCode = statusCode || this[or] || 304;
 };
 
 ResponseBuilder.prototype.checkEnd = function(){
@@ -168,8 +169,8 @@ ResponseBuilder.prototype.checkEnd = function(){
 ResponseBuilder.prototype.success = function(result, extra){
   if(util.isFunction(this.successCallback)) return this.successCallback(result, extra);
   this.filterOut(result);
-  if(this.logLevel%2===1) this.logger(this.requestId, result, extra);
-  result = this.preProcessSuccess(result);
+  if(util.isFunction(this.logger) && this.logLevel%2===1) this.logger(this.requestId, result, extra);
+  if(util.isFunction(this.preProcessSuccess)) result = this.preProcessSuccess(result);
   if(!result) result = this.defaultSuccessMessage;
   this.handleFour('successStatus');
   if(util.isString(this.successKey)){
@@ -178,6 +179,7 @@ ResponseBuilder.prototype.success = function(result, extra){
     result = newResult;
     if(this.addRequestIdWhen%2===1) newResult.requestId = this.requestId;
     this.adding(result, [this.addToSuccess]);
+    if(extra !== undefined && extra !== null && util.isString(this.extraKey)) result[this.extraKey] = extra;
     if(this.attachement) {
       this.attach(result, true);
     } else {
@@ -194,13 +196,16 @@ ResponseBuilder.prototype.setType = function(){
   if(util.isHTMLRequest(this.req)) this.type = 'text/html';
   else if(util.isXMLRequest(this.req)) this.type = 'application/xml';
   else if(util.isPlainRequest(this.req)) this.type = 'text/plain';
-  if(util.isFound(this.res, 'type')) this.res.type(this.type);
-  else if(util.isFound(this.res, 'setHeader')) this.res.setHeader('Content-Type', this.type);
-  else if(util.isObject(this.res.headers)) this.res.headers['Content-Type'] = this.type;
+  if(this.type){
+    if(util.isFound(this.res, 'type')) this.res.type(this.type);
+    else if(util.isFound(this.res, 'setHeader')) this.res.setHeader('Content-Type', this.type);
+    else if(util.isObject(this.res.headers)) this.res.headers['Content-Type'] = this.type;
+  }
 };
 
 ResponseBuilder.prototype.attach = function(data, isJSON){
   var fname = util.getString(this.attachement, [data, this.req]);
+  if(!util.isString(fname)) fname = 'attachement';
   if(util.isFound(this.res, 'attachment')){
     this.res.attachment(fname).send(isJSON ? util.stringify(data, ' ') : data);
   } else {
@@ -263,7 +268,9 @@ exports.build = function(){
 };
 
 exports.setOptions = function(opts){
-  for(var ok in opts){
-    options[ok] = opts[ok];
-  };
+  if(util.isObject(opts)){
+    for(var ok in opts){
+      options[ok] = opts[ok];
+    };
+  }
 };
