@@ -1,23 +1,36 @@
 {
-	"name":"rb",
-	"description":"Building nodejs response with ease",
-	"version":"0.0.3",
-	"keywords":["response","builder","nodejs","error", "logger"],
-	"repository":{
-		"type":"git",
-		"url":"https://github.com/nodeofcode/response-builder.git"
-	},
-	"bugs":{
-		"url":"https://github.com/nodeofcode/response-builder/issues"
-	},
-	"engines":{
-		"node":">=0.6.0"
-	},
-	"dependencies":{
-	},
-	"licenses":[{
-		"type":"MIT",
-		"url":"http://www.opensource.org/licenses/MIT"
-	}],
-	"main":"index"
+  "name": "rb",
+  "description": "Building nodejs response with ease",
+  "version": "0.0.3",
+  "keywords": [
+    "response",
+    "builder",
+    "nodejs",
+    "error",
+    "logger"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nodeofcode/response-builder.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nodeofcode/response-builder/issues"
+  },
+  "engines": {
+    "node": ">=0.6.0"
+  },
+  "dependencies": {},
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "http://www.opensource.org/licenses/MIT"
+    }
+  ],
+  "main": "index",
+  "homepage": "https://github.com/nodeofcode/response-builder",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Ramesh Kumar <goods.ramesh@gmail.com>",
+  "license": "MIT"
 }

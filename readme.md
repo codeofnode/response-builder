@@ -81,7 +81,7 @@ function(req,res){
 	someOtherFunctionCallingWithCallBack(Builder.all);
 };
 ```
->In some cases we want to handle response for many places that deal with same request/response. In such cases we can build the builder once and use throught the that route function. 
+>In some cases we want to handle response for many places that deal with same request/response. In such cases we can build the builder once and use throught the that route function.
 
 ## Options
 There are options which configures and handle responses. Every option can either be false or as of corresponding type.
@@ -103,7 +103,7 @@ Option | Description | If found unset(false) | Type | Default | ValidOnlyIf
 `errorCode` | These are the custom/application error code. So that if end user find this error code in response, one may refer some error code ref page and find reason and how to get rid of that error. | No error code will be set | String without space  | false | `errorKey` and Error handler called
 `errorCodeKey` | with which key errorCode to be associated in error object | String  | 'errorCode' | false | `errorCode` is set and error handler called
 `noResultStatus` | What status code to be sent if none of error and successResult found | 304 | Integer(100-600)  | 404 | none of error or successResult found
-`noResultError` | What Error message to be sent if none of error and successResult found | if `noResultStatus` found and `noResultError` not found, response will be send without body | Integer(100-600)  | 'Record not found' | `noResultStatus`
+`noResultError` | What Error message to be sent if none of error and successResult found | if `noResultStatus` found and `noResultError` not found, response will be send without body | String  | 'Record not found' | `noResultStatus`
 `successCallback` | Builder will build the successObject and then handler will call this function instead of sending to client. Usefull in cases when you want to perform nested database operations before sending final response | Response will be sent to client | Function that get successResult as first parameter  | false | success handler called
 `filterProperties` | To remove the fields in response that are critical when known to client eg password, some private key etc. | No fields will be removed | String containing space separated keys | false | success handler called
 `preProcessError` | If you want to modify/customize error object before sending to client. You get errorObject as first parameter and you should return modified errrorObject in function | Raw error will be sent | Function that returns modified error | MongoDB Unique entry preprocessor. If you are not using mongoDB, rest assured. In 99% cases it wont affect your error. | error handler called
@@ -114,16 +114,16 @@ Option | Description | If found unset(false) | Type | Default | ValidOnlyIf
 `versionKey` | the key with which version info to be associated | No version info will be send | String | 'version' | `version` option is set
 `logger` | Used to log the error/success responses so as to debug easily in development environment, or customize it so that error/response will be saved in file. (you may integerate [winston](https://github.com/winstonjs/winston) easily for prod) | no loggin will take place | Function | `console.log(requestId, info)` | `logLevel` is set
 `logLevel` | in which cases logger should call.  // 0 : never, 1 : only on success, 2 : only on error, 3 : always | logger will not be called | integer[0-3] | 2 | always valid
-`headers` | additional header to be sent with response. Common headers like `*-powered-by` to be set once and will be used automatically whenever `RB` is used. | no additional header will be sent | Object, key value pairs of (headerName : headervalue) | false | always valid 
+`headers` | additional header to be sent with response. Common headers like `*-powered-by` to be set once and will be used automatically whenever `RB` is used. | no additional header will be sent | Object, key value pairs of (headerName : headervalue) | false | always valid
 
 ### How to set options
 #### Globally
 	require('rb').setOptions(optionsObject)
     // optionsObject may be something like
     // {version : '1.4.3', noResultStatus : false, successKey : 'result', addToError: { ok : false }, addToSuccess : { ok : true }, //otherValidOptions }
-> You can set global options like `version` ,`getRequestId`, and everything that are application specific. This should be called after `RB` is loaded and before the main application starts. 
+> You can set global options like `version` ,`getRequestId`, and everything that are application specific. This should be called after `RB` is loaded and before the main application starts.
 
-#### At builder 
+#### At builder
 	RB.build(res, optionsObject);
     OR
     RB.build(req, res, optionsObject); //if req is also used further
@@ -132,7 +132,7 @@ Option | Description | If found unset(false) | Type | Default | ValidOnlyIf
 > You can set request/response specific options at build time.
 
 ### At error handler
-	Builder.error('some_error', statusCodeOrErrorCodeOnTheFly, addToErroObject)
+	Builder.error('some_error', statusCodeOrErrorCodeOnTheFly, onTheFlyAddToErrorObject)
 > Applicable only for error handler. These will be used when you are calling handler yourself without a handler. You may set the properties like statusCode/ErrorCode or to add some properties to error object on the fly.
 
 ## Examples
