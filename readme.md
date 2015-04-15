@@ -137,11 +137,408 @@ Option | Description | If found unset(false) | Type | Default | ValidOnlyIf
 
 ## Examples
 
-##### examples are on the way .. stay tuned ...
+Examples are taken after using RB with a nodejs web application **lets-chat**, that is also open source, and available [here](https://github.com/sdelements/lets-chat).
+
+#### Setting globally the errorKey as `errors`, with which each error information/object will be linked whenever an error response to be sent to client
+```javascript
+  require('response-builder').setOptions({ errorKey : 'errors' });
+```
+#### Adding additional `message` with error object, applicable only in cases where error found.
+Before without RB :
+```javascript
+            core.account.update(req.user._id, data, function (err, user) {
+                if (err) {
+                    return res.json({
+                        status: 'error',
+                        message: 'Unable to update your profile.',
+                        errors: err
+                    });
+                }
+
+                if (!user) {
+                    return res.sendStatus(404);
+                }
+
+                res.json(user);
+            });
+```
+After with RB :
+```javascript
+            core.account.update(req.user._id, data, RB.build(res, { message : 'Unable to update your profile.' }).all);
+```
+#### Build once with `request` pair specific options, and handle many places.
+Before without RB :
+```javascript
+             if (req.user.using_token) {
+                return res.status(403).json({
+                    status: 'error',
+                    message: 'Cannot change account settings ' +
+                             'when using token authentication.'
+                });
+             }
+
+             // ... some other code
+
+            auth.authenticate(req, req.user.uid || req.user.username,
+                              data.currentPassword, function(err, user) {
+                if (err) {
+                    return res.status(400).json({
+                        status: 'error',
+                        message: 'There were problems authenticating you.',
+                        errors: err
+                    });
+                }
+
+                if (!user) {
+                    return res.status(401).json({
+                        status: 'error',
+                        message: 'Incorrect login credentials.'
+                    });
+                 }
+
+                 core.account.update(req.user._id, data, function (err, user, reason) {
+                     if (err || !user) {
+                        return res.status(400).json({
+                             status: 'error',
+                             message: 'Unable to update your account.',
+                             reason: reason,
+                             errors: err
+                         });
+                    }
+                    res.json(user);
+                 });
+            });
+```
+After with RB :
+```javascript
+        // Building once with options to add status and errorKey to error object whenever an error occurs
+            var sendResponse = RB.build(res,{ addToError : { status : 'error', errorKey : 'message' } });
+             if (req.user.using_token) {
+                return sendResponse.error('Cannot change account settings when using token authentication.',403);
+             }
+
+        // .... some code
+        // Now, Setting up runtime options, so as to handle rest of block code with new options going to be used ahead.
+            sendResponse.addToError.message = 'There were problems authenticating you.'; // addToError was already defined at time of building. Just updating it again for rest of code
+
+            sendResponse.successCallback = function(user){ // setting up callback, which tell hander not to send response to client rather callback with success object here
+
+                if(!user) {
+                    return sendResponse.error('Incorrect login credentials.',401);
+                 }
+                sendResponse.errorKey = false;
+                 core.account.update(req.user._id, data, function (err, user, reason) {
+                     if (err || !user) {
+                        sendResponse.error({
+                             status: 'error',
+                             message: 'Unable to update your account.',
+                             reason: reason,
+                             errors: err
+                         });
+                    } else sendResponse.success(user);
+                 });
+            };
+        // all done, now use it in one line
+            auth.authenticate(req, req.user.uid || req.user.username, data.currentPassword, sendResponse.all);
+```
+#### Adding `successKey` with which the raw success object will be linked, Adding few other properties with option `addToSuccess` that should be added in success response whenever a success response to be sent to client
+Before without RB :
+```javascript
+             if (req.user.using_token) {
+                return res.status(403).json({
+                    status: 'error',
+                    message: 'Cannot generate a new token ' +
+                             'when using token authentication.'
+                });
+             }
+
+            core.account.generateToken(req.user._id, function (err, token) {
+                if (err) {
+                    return res.json({
+                        status: 'error',
+                        message: 'Unable to generate a token.',
+                        errors: err
+                    });
+                }
+
+                res.json({
+                    status: 'success',
+                    message: 'Token generated.',
+                    token: token
+                });
+            });
+```
+After with RB :
+```javascript
+            var sendResponse = RB.build(res, { successKey : 'token',
+                addToError : { status : 'error' },
+                addToSuccess : { status : 'success', message : 'Token generated.' } }); // `addToSuccess`, object to be merged with success response
+             if (req.user.using_token) {
+                sendResponse.errorKey = 'message';
+                return sendResponse.error('Cannot generate a new token when using token authentication.',403);
+             }
+
+            sendResponse.addToError.message = 'Unable to generate a token.';
+            core.account.generateToken(req.user._id, sendResponse.all);
+```
+#### Use option `defaultErrorMessage` and/or `defaultSuccessMessage` to send to client in case no raw error OR no raw success object, respectively, is found. Remember to set `noResultStatus` as false, in order to treat `no raw success` as a success case.
+Before without RB :
+```javascript
+             if (req.user.using_token) {
+                return res.status(403).json({
+                    status: 'error',
+                    message: 'Cannot revoke token ' +
+                             'when using token authentication.'
+                });
+             }
+
+            core.account.revokeToken(req.user._id, function (err) {
+                if (err) {
+                    return res.json({
+                        status: 'error',
+                        message: 'Unable to revoke token.',
+                        errors: err
+                    });
+                }
+
+                res.json({
+                    status: 'success',
+                    message: 'Token revoked.'
+                });
+            });
+```
+After with RB :
+```javascript
+            var sendResponse = RB.build(res, {
+              // setting up noResultStatus as false, so that even if there is no second parameter found while calling `all` handler, it should reflect success case with defaultSuccessMessage
+                noResultStatus : false, successKey : 'message', defaultSuccessMessage : 'Token revoked',
+                addToError : { status : 'error' },
+                addToSuccess : { status : 'success' } });
+             if (req.user.using_token) {
+                sendResponse.errorKey = 'message';
+                return sendResponse.error('Cannot revoke token when using token authentication.',403);
+             }
+
+            sendResponse.addToError.message = 'Unable to revoke token.';
+            core.account.generateToken(req.user._id, sendResponse.all);
+```
+#### Setting up default `successStatus` to be set for a block of code and combined example of how to use pre-process the errors with `preProcessError`
+Before without RB :
+```javascript
+             if (req.user ||
+                 !auth.providers.local ||
+                 !auth.providers.local.enableRegistration) {
+
+                return res.status(403).json({
+                    status: 'error',
+                    message: 'Permission denied'
+                });
+             }
+
+             var fields = req.body || req.data;
+             // ... some other code
+             var passwordConfirm = fields.passwordConfirm || fields.passwordconfirm || fields['password-confirm'];
+
+             if (fields.password !== passwordConfirm) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Password not confirmed'
+                });
+             }
+
+             var data = {
+             // ... some other code
+                 displayName: fields.displayName || fields.displayname || fields['display-name']
+             };
+
+            core.account.create('local', data, function(err, user) {
+                if (err) {
+                    var message = 'Sorry, we could not process your request';
+                    // User already exists
+                    if (err.code === 11000) {
+                        message = 'Email has already been taken';
+                    }
+                    // Invalid username
+                    if (err.errors) {
+                        message = _.map(err.errors, function(error) {
+                            return error.message;
+                        }).join(' ');
+                    // If all else fails...
+                    } else {
+                        console.error(err);
+                    }
+                    // Notify
+                    return res.status(400).json({
+                        status: 'error',
+                        message: message
+                    });
+                 }
+
+                res.status(201).json({
+                    status: 'success',
+                    message: 'You\'ve been registered, ' +
+                             'please try logging in now!'
+                });
+            });
+```
+After with RB :
+```javascript
+            var sendResponse = RB.build(res, { errorKey : 'message', successStatus : 201,
+                addToError : { status : 'error' },
+                addToSuccess : { status : 'success', message: 'You\'ve been registered, please try logging in now!' } });
+
+             if (req.user ||
+                 !auth.providers.local ||
+                 !auth.providers.local.enableRegistration) {
+
+                return sendResponse.error('Permission denied.',403);
+
+             }
+
+             var fields = req.body || req.data;
+             // ... some other code
+             var passwordConfirm = fields.passwordConfirm || fields.passwordconfirm || fields['password-confirm'];
+
+             if (fields.password !== passwordConfirm) {
+                return sendResponse('Password not confirmed');
+             }
+
+             var data = {
+             // ... some other code
+                 displayName: fields.displayName || fields.displayname || fields['display-name']
+             };
+
+            sendResponse.preProcessError = function(err){ // custom preProcessing function for this specific case, You can also set custom preProcessing when used with `setOptions` globally
+                var message = 'Sorry, we could not process your request';
+                // User already exists
+                if (err.code === 11000) {
+                    message = 'Email has already been taken';
+                 }
+                // Invalid username
+                if (err.errors) {
+                    message = _.map(err.errors, function(error) {
+                        return error.message;
+                    }).join(' ');
+                // If all else fails...
+                }
+                return message;
+            };
+            core.account.create('local', data, sendResponse.all);
+```
+#### The `ON FLY` options on second and third parameter in error handler. See above 'How to use options' [section](https://github.com/nodeofcode/response-builder#how-to-set-options) for description
+Before without RB :
+```javascript
+             auth.authenticate(req, function(err, user, info) {
+                 if (err) {
+                    return res.status(400).json({
+                        status: 'error',
+                        message: 'There were problems logging you in.',
+                        errors: err
+                    });
+                 }
+
+                 if (!user && info && info.locked) {
+                    return res.status(403).json({
+                        status: 'error',
+                        message: info.message || 'Account is locked.'
+                    });
+                 }
+
+                 if (!user) {
+                    return res.status(401).json({
+                        status: 'error',
+                        message: info && info.message ||
+                                 'Incorrect login credentials.'
+                    });
+                 }
+
+                req.login(user, function(err) {
+                    if (err) {
+                        return res.status(400).json({
+                            status: 'error',
+                            message: 'There were problems logging you in.',
+                            errors: err
+                        });
+                    }
+                     var temp = req.session.passport;
+                    req.session.regenerate(function(err) {
+                        if (err) {
+                            return res.status(400).json({
+                                status: 'error',
+                                message: 'There were problems logging you in.',
+                                errors: err
+                            });
+                        }
+                         req.session.passport = temp;
+                        res.json({
+                            status: 'success',
+                            message: 'Logging you in...'
+                        });
+                    });
+                });
+```
+After with RB :
+```javascript
+            var sendResponse = RB.build(res, { successKey : 'result', noResultStatus : false,
+                addToError : { status : 'error', message : 'There were problems logging you in.' },
+                addToSuccess : { status : 'success', message: 'Logging you in...' } });
+             auth.authenticate(req, function(err, user, info) {
+                 if (err) {
+                    return sendResponse.error(err); // no any on fly option
+                 }
+
+                 if (!user && info && info.locked) {
+                    return sendResponse.error(err, 403, { message : info.message || 'Account is locked.' }); //On the fly setting status 403 and adding `message` property on the fly to the error object just before sending to client
+                 }
+
+                 if (!user) {
+                    return sendResponse.error(err, 401, { message : info && info.message || 'Incorrect login credentials.' });
+                 }
+
+                sendResponse.successCallback = function(){
+                     var temp = req.session.passport;
+                    sendResponse.preProcessSuccess = function(){
+                         req.session.passport = temp;
+                    };
+                    req.session.regenerate(sendResponse.all);
+                };
+                req.login(user, sendResponse.all);
+```
+#### Build with runtime options and use instantly with `all` handler
+Before without RB
+```javascript
+            core.messages.create(options, function(err, message) {
+                if (err) {
+                    return res.sendStatus(400);
+                }
+                res.status(201).json(message);
+            });
+```
+After with RB
+```javascript
+            core.messages.create(options, RB.build(res, { successStatus : 201 }).all); // setting up `successStatus` for this builder and handler only
+```
+ignore second parameter if does not want to provide runtime options.
+Before without RB
+```javascript
+            core.messages.list(options, function(err, messages) {
+                if (err) {
+                    return res.sendStatus(400);
+                }
+                res.json(messages);
+            });
+```
+After with RB
+```javascript
+            core.messages.list(options, RB.build(res).all); // no run time option
+```
+#### Did not found any one suitable for your case. Just open a [issue](https://github.com/nodeofcode/response-builder/issues) describing your case, and in response to that you will get that specific `builder`.
 
 ## Roadmap
-> Raise a feature request, and that will fill this place
+> Raise a feature request by logging an [issue](https://github.com/nodeofcode/response-builder/issues), and that will fill this place
 
+## Any hurdles?
+> Found anything difficult to understand? or some bug or some improvement?. Create an issue [issue](https://github.com/nodeofcode/response-builder/issues) for the same.
 
 ## License
 
