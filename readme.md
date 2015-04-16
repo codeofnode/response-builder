@@ -1,14 +1,16 @@
 # ResponseBuilder
 ## Build the success and error responses in nodejs application and manage `what` to be sent to client.
 
-Usually in a NodeJS App, we play around with loads of callbacks each with order of parameters `err`, `successResult`, `extraResult`. Each of these callback usually have similar kind of handling. Eg,
-* if error found then set status as 400, log error on console or file (for debugging), and send the error response.
-* If result not found, then send 404.
-* Some of us also like to link a unique request or version of API being used, to be sent to client for future reference.
-* Sending `Content-Type` as per `Accept` header found
-* many more ..
-
-### ResponseBuilder does all these in very little space of single line of code.
+## Features
+* Automatically logging all the errors, if found, whether on terminal/file
+* Setting up status code for error and success automatically
+* Automatically detect 404 cases and sent 404 response in those cases.
+* Attaching a unique requestId each time a response a sent. With which client can report some unknown error to the API service provider, referencing that requestId.
+* Sending your custom errorCode of your app, which can help client to see and identify why an error encountered and what is the remedy.
+* Adding extra fields like message, status or any other field while sending response
+* If provided, automatically sends the API version information with each response sent to client. That can have many advantages like handling client side code based on the API version and many others if we think.
+* Every feature can be set/unset as options, that is customizable globally(throught the app), run-time(within a route function/block) or on-fly(at time of calling handler)
+* Reduced, clean and manageable code for your nodejs server.
 
 ## Install
 
