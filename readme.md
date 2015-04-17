@@ -41,7 +41,7 @@ Before without RB :
 ```
 After with RB :
 ```javascript
-    MongooseModel.get({ _id : some_id }, RB.build(res).all);  // where RB = require('rb')
+    MongooseModel.find({ _id : some_id }, RB.build(res).all);  // where RB = require('rb')
 ```
 
 ### Builder and Handlers
