@@ -12,6 +12,10 @@ module.exports = {
     return (typeof func === 'function');
   },
 
+  isNumber : function(func){
+    return (typeof func === 'number');
+  },
+
   isValidRequest : function(req){
     return (this.isObject(req) && req.httpVersion && req.method && req.url);
   },

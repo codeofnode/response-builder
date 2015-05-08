@@ -25,6 +25,7 @@ var options = {
   errorCodeKey : 'errorCode',
   successCallback : false,
   filterProperties : false,
+  filterDepth : 3,
   //preProcessError : function(err){ return err; }, ADDED BELOW
   preProcessSuccess : false,
   attachement : false,
@@ -238,7 +239,7 @@ ResponseBuilder.prototype.fillHeaders = function(){
 };
 
 ResponseBuilder.prototype.filterOut = function(input){
-  if(util.isString(this.filterProperties)) util.removeProperties(input, this.filterProperties);
+  if(util.isString(this.filterProperties)) util.removeProperties(input, this.filterProperties, this.filterDepth);
 };
 
 exports.build = function(){
