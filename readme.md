@@ -70,6 +70,7 @@ After with RB :
 #### Success handler
 	.success([<successResult>],[<extraSuccessData>])
 > Sometime you may want to send success object without having a callback. If called without any parameter, default success message will be sent with status 200.
+> If 2nd parameter is a function, then it will be used as returning success callback instead of sending response to client.
 
 #### Build once and handle at multiple places
 ```javascript
@@ -97,8 +98,8 @@ Option | Description | If found unset(false) | Type | Default | ValidOnlyIf
 `addRequestIdWhen` | addRequestId constraints. 0 : never, 1 : only on success, 2 : only on error, 3 : always | `requestId` will not be linked | Integer[0-3] | 0 | `errorKey` or OR `successKey`
 `addToError` | Object which will get merged with the error response object | Nothing additional will be merged | Object | false | `errorKey`
 `addToSuccess` | Object which will get merged with the success response object | Nothing additional will be merged | Object | false | `successKey`
-`defaultSuccessMessage` | In case of falsy value in successResult, this will will be the raw error. | Raw input will be used | String | 'Operation was successfull..!' | `successKey`
-`defaultErrorMessage` | In case of falsy value in error, this will will be the raw error. | Raw input will be used | String | 'Ohh..! We experienced an unknown glitch..!' | `errorKey`
+`defaultSuccess` | In case of falsy value in successResult, this will will be the raw error. | Raw input will be used | String | 'Operation was successfull..!' | `successKey`
+`defaultError` | In case of falsy value in error, this will will be the raw error. | Raw input will be used | String | 'Ohh..! We experienced an unknown glitch..!' | `errorKey`
 `type` | RB first try to find if `req` and its `Accept` header found. If not so, this one determines what  default `Content-Type` header to be sent. | will not set any `Content-Type` | String | 'application/json' | Either `req` not found or its `Accept` is not amongs `xml`, `html` or `plain`
 `successStatus` | Success status sode to be sent | 304 | Integer(100-600)  | 200 | Success Handler Called
 `errorStatus` | Error status sode to be sent | 304 | Integer(100-600)  | 400 | Error Handler Called
@@ -110,6 +111,7 @@ Option | Description | If found unset(false) | Type | Default | ValidOnlyIf
 `filterProperties` | To remove the fields in response that are critical when known to client eg password, some private key etc. | No fields will be removed | String containing space separated keys | false | success handler called
 `filterDepth` | to the depth in which the `filterProperties` will be searched to remove from the main success object. | Will only filterOut root properties | Integer(1-29) | 1 | `filterProperties` found
 `preProcessError` | If you want to modify/customize error object before sending to client. You get errorObject as first parameter and you should return modified errrorObject in function | Raw error will be sent | Function that returns modified error | MongoDB Unique entry preprocessor. If you are not using mongoDB, rest assured. In 99% cases it wont affect your error. | error handler called
+`callIfSuccess` | In many cases, you only want to handle only success cases to make further callbacks before sending response to client. Calling this with a function (callback) as parameter that is called with the success result after processing. If in case an error found, then this callback will not be called, and error will directly sent to client. | Normal process of sending to client will follow | Function that accept a callback as prameter | false | success handler called
 `preProcessSuccess` | same as `preProcessError` but for success cases. | Raw success data will be sent | Function returning modified success data | false | success handler called
 `attachement` | this gives filename of file that needed to be sent as attachement in the response. | Normal response will be sent | String or Function returning name of file as string | false | success handler called
 `noResponseBody` | to send no response body, only status required to be sent | normal response will be sent | Boolean | false | always valid
@@ -224,11 +226,9 @@ After with RB :
         // Now, Setting up runtime options, so as to handle rest of block code with new options going to be used ahead.
             sendResponse.addToError.message = 'There were problems authenticating you.'; // addToError was already defined at time of building. Just updating it again for rest of code
 
-            sendResponse.successCallback = function(user){ // setting up callback, which tell hander not to send response to client rather callback with success object here
-
-                if(!user) {
-                    return sendResponse.error('Incorrect login credentials.',401);
-                 }
+        // all done, now use it in one line
+            auth.authenticate(req, req.user.uid || req.user.username, data.currentPassword, sendResponse.callIfSuccess(function(user){
+              // setting up callback, which tell hander not to send response to client rather callback with success object here
                 sendResponse.errorKey = false;
                  core.account.update(req.user._id, data, function (err, user, reason) {
                      if (err || !user) {
@@ -240,9 +240,7 @@ After with RB :
                          });
                     } else sendResponse.success(user);
                  });
-            };
-        // all done, now use it in one line
-            auth.authenticate(req, req.user.uid || req.user.username, data.currentPassword, sendResponse.all);
+              }));
 ```
 #### Adding `successKey` with which the raw success object will be linked, Adding few other properties with option `addToSuccess` that should be added in success response whenever a success response to be sent to client
 Before without RB :
@@ -284,7 +282,7 @@ After with RB :
             sendResponse.addToError.message = 'Unable to generate a token.';
             core.account.generateToken(req.user._id, sendResponse.all);
 ```
-#### Use option `defaultErrorMessage` and/or `defaultSuccessMessage` to send to client in case no raw error OR no raw success object, respectively, is found. Remember to set `noResultStatus` as false, in order to treat `no raw success` as a success case.
+#### Use option `defaultError` and/or `defaultSuccess` to send to client in case no raw error OR no raw success object, respectively, is found. Remember to set `noResultStatus` as false, in order to treat `no raw success` as a success case.
 Before without RB :
 ```javascript
              if (req.user.using_token) {
@@ -313,8 +311,8 @@ Before without RB :
 After with RB :
 ```javascript
             var sendResponse = RB.build(res, {
-              // setting up noResultStatus as false, so that even if there is no second parameter found while calling `all` handler, it should reflect success case with defaultSuccessMessage
-                noResultStatus : false, successKey : 'message', defaultSuccessMessage : 'Token revoked',
+              // setting up noResultStatus as false, so that even if there is no second parameter found while calling `all` handler, it should reflect success case with defaultSuccess
+                noResultStatus : false, successKey : 'message', defaultSuccess : 'Token revoked',
                 addToError : { status : 'error' },
                 addToSuccess : { status : 'success' } });
              if (req.user.using_token) {
@@ -498,14 +496,13 @@ After with RB :
                     return sendResponse.error(err, 401, { message : info && info.message || 'Incorrect login credentials.' });
                  }
 
-                sendResponse.successCallback = function(){
-                     var temp = req.session.passport;
+                req.login(user, sendResponse.callIfSuccess(function(){
+                    var temp = req.session.passport;
                     sendResponse.preProcessSuccess = function(){
                          req.session.passport = temp;
                     };
                     req.session.regenerate(sendResponse.all);
-                };
-                req.login(user, sendResponse.all);
+                }));
 ```
 #### Build with runtime options and use instantly with `all` handler
 Before without RB

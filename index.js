@@ -14,10 +14,11 @@ var options = {
   addRequestIdWhen : 0, // 0 : never, 1 : only on success, 2 : only on error, 3 : always
   addToError : false,
   addToSuccess : false,
-  defaultErrorMessage: 'Ohh..! We experienced an unknown glitch..!',
-  defaultSuccessMessage: 'Operation was successfull..!',
+  defaultError: 'Ohh..! We experienced an unknown glitch..!',
+  defaultSuccess: 'Operation was successfull..!',
   type : 'application/json',
   successStatus : 200,
+  callIfSuccess : false,
   noResultStatus : 404,
   noResultError : 'Record not found.',
   errorStatus : 400,
@@ -118,7 +119,7 @@ ResponseBuilder.prototype.error = function(err, code, status){
   };
   if(util.isFunction(this.logger) && this.logLevel > 1) this.logger(this.requestId, err);
   if(util.isFunction(this.preProcessError)) err = util.getString(this.preProcessError, [err]);
-  if(err === '_d') err = this.defaultErrorMessage;
+  if(err === '_d') err = this.defaultError;
   this.handleFour('errorStatus', errorStatus);
   if(util.isString(this.errorKey)){
     var newError = {};
@@ -172,15 +173,18 @@ ResponseBuilder.prototype.success = function(result, extra){
   this.filterOut(result);
   if(util.isFunction(this.logger) && this.logLevel%2===1) this.logger(this.requestId, result, extra);
   if(util.isFunction(this.preProcessSuccess)) result = this.preProcessSuccess(result);
-  if(!result) result = this.defaultSuccessMessage;
+  if(!result) result = this.defaultSuccess;
   this.handleFour('successStatus');
+  if(util.isFunction(extra)) return extra(result);
   if(util.isString(this.successKey)){
     var newResult = {};
     newResult[this.successKey] = util.cloneObject(result);
     result = newResult;
     if(this.addRequestIdWhen%2===1) newResult.requestId = this.requestId;
     this.adding(result, [this.addToSuccess]);
-    if(extra !== undefined && extra !== null && util.isString(this.extraKey)) result[this.extraKey] = extra;
+    if(extra !== undefined && extra !== null && util.isString(this.extraKey)){
+      result[this.extraKey] = extra;
+    }
     if(this.attachement) {
       this.attach(result, true);
     } else {
@@ -236,6 +240,14 @@ ResponseBuilder.prototype.fillHeaders = function(){
       this.res.setHeader(hk, this.headers[hk]);
     }
   }
+};
+
+ResponseBuilder.prototype.callIfSuccess = function(next){
+  var self = this;
+  return function(err,success,extra){
+    if(err) self.error(err,success,extra);
+    else self.success(success,next);
+  };
 };
 
 ResponseBuilder.prototype.filterOut = function(input){
