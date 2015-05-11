@@ -18,7 +18,6 @@ var options = {
   defaultSuccess: 'Operation was successfull..!',
   type : 'application/json',
   successStatus : 200,
-  callIfSuccess : false,
   noResultStatus : 404,
   noResultError : 'Record not found.',
   errorStatus : 400,
@@ -26,7 +25,7 @@ var options = {
   errorCodeKey : 'errorCode',
   successCallback : false,
   filterProperties : false,
-  filterDepth : 3,
+  filterDepth : 5,
   //preProcessError : function(err){ return err; }, ADDED BELOW
   preProcessSuccess : false,
   attachement : false,
@@ -64,32 +63,28 @@ exports.options = options;
 exports.util = util;
 
 function ResponseBuilder(req, res, opts){
-  var toReturn = {}, dk, apis = ['all','error', 'success'];
+  var dk;
   for(dk in options){
-    this[dk] = toReturn[dk] = options[dk];
+    this[dk] = options[dk];
   }
   if(util.isObject(opts)){
     for(dk in opts){
-      this[dk] = toReturn[dk] = opts[dk];
+      this[dk] =  opts[dk];
     }
   }
   if(util.isValidRequest(req)) this.req = req;
   if(util.isValidResponse(res)) this.res = res;
   else throw new Error('Response Builder : No response object found.!');
-  for(dk in apis){
-    toReturn[apis[dk]] = ResponseBuilder.prototype[apis[dk]].bind(this);
-  }
-  return toReturn;
-};
-
-ResponseBuilder.prototype.all = function(err,result,extra){
-  this.requestId = this.getRequestId(this.req);
-  if(!result && this.noResultStatus){
-    err = this.noResultError;
-    this.errorStatus = this.noResultStatus;
-  }
-  if(err) this.error(err, result, extra);
-  else this.success(result, extra);
+  var self = this;
+  this.all = function(err,result,extra){
+    self.requestId = self.getRequestId(self.req);
+    if(!result && self.noResultStatus){
+      err = self.noResultError;
+      self.errorStatus = self.noResultStatus;
+    }
+    if(err) self.error(err, result, extra);
+    else self.success(result, extra);
+  };
 };
 
 ResponseBuilder.prototype.error = function(err, code, status){
@@ -136,6 +131,43 @@ ResponseBuilder.prototype.error = function(err, code, status){
   } else this.res.send(err);
 };
 
+ResponseBuilder.prototype.success = function(result, extra){
+  if(util.isFunction(this.successCallback)) return this.successCallback(result, extra);
+  this.filterOut(result);
+  if(util.isFunction(this.logger) && this.logLevel%2===1) this.logger(this.requestId, result, extra);
+  if(util.isFunction(this.preProcessSuccess)) result = this.preProcessSuccess(result);
+  if(!result) result = this.defaultSuccess;
+  this.handleFour('successStatus');
+  if(util.isFunction(extra)) return extra(result);
+  if(util.isString(this.successKey)){
+    var newResult = {};
+    newResult[this.successKey] = util.cloneObject(result);
+    result = newResult;
+    if(this.addRequestIdWhen%2===1) newResult.requestId = this.requestId;
+    this.adding(result, [this.addToSuccess]);
+    if(extra !== undefined && extra !== null && util.isString(this.extraKey)){
+      result[this.extraKey] = extra;
+    }
+    if(this.attachement) {
+      this.attach(result, true);
+    } else {
+      if(util.isFound(this.res, 'json')) this.res.json(result);
+      else this.res.send(util.stringify(result));
+    }
+  } else {
+    if(this.attachement) this.attach(result);
+    else this.res.send(result);
+  }
+};
+
+ResponseBuilder.prototype.callIfSuccess = function(next){
+  var self = this;
+  return function(err,success,extra){
+    if(err) self.error(err,success,extra);
+    else self.success(success,next);
+  };
+};
+
 ResponseBuilder.prototype.adding = function(obj, arr){
   arr.forEach(function(ae){
     if(util.isObject(ae)){
@@ -165,35 +197,6 @@ ResponseBuilder.prototype.checkEnd = function(){
   if(this.noResponseBody){
     if(util.isFound(this.res, 'end')) return this.res.end();
     if(util.isFound(this.res, 'send')) return this.res.send();
-  }
-};
-
-ResponseBuilder.prototype.success = function(result, extra){
-  if(util.isFunction(this.successCallback)) return this.successCallback(result, extra);
-  this.filterOut(result);
-  if(util.isFunction(this.logger) && this.logLevel%2===1) this.logger(this.requestId, result, extra);
-  if(util.isFunction(this.preProcessSuccess)) result = this.preProcessSuccess(result);
-  if(!result) result = this.defaultSuccess;
-  this.handleFour('successStatus');
-  if(util.isFunction(extra)) return extra(result);
-  if(util.isString(this.successKey)){
-    var newResult = {};
-    newResult[this.successKey] = util.cloneObject(result);
-    result = newResult;
-    if(this.addRequestIdWhen%2===1) newResult.requestId = this.requestId;
-    this.adding(result, [this.addToSuccess]);
-    if(extra !== undefined && extra !== null && util.isString(this.extraKey)){
-      result[this.extraKey] = extra;
-    }
-    if(this.attachement) {
-      this.attach(result, true);
-    } else {
-      if(util.isFound(this.res, 'json')) this.res.json(result);
-      else this.res.send(util.stringify(result));
-    }
-  } else {
-    if(this.attachement) this.attach(result);
-    else this.res.send(result);
   }
 };
 
@@ -240,14 +243,6 @@ ResponseBuilder.prototype.fillHeaders = function(){
       this.res.setHeader(hk, this.headers[hk]);
     }
   }
-};
-
-ResponseBuilder.prototype.callIfSuccess = function(next){
-  var self = this;
-  return function(err,success,extra){
-    if(err) self.error(err,success,extra);
-    else self.success(success,next);
-  };
 };
 
 ResponseBuilder.prototype.filterOut = function(input){

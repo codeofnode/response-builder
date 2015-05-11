@@ -48,7 +48,7 @@ module.exports = {
   getString : function(input, args){
     if(this.isFunction(input)){
       var x = input.apply(input, args);
-      if(util.isString(x)) return x;
+      if(this.isString(x)) return x;
       else return input;
     } else {
       return input;

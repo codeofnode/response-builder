@@ -72,6 +72,10 @@ After with RB :
 > Sometime you may want to send success object without having a callback. If called without any parameter, default success message will be sent with status 200.
 > If 2nd parameter is a function, then it will be used as returning success callback instead of sending response to client.
 
+#### Callback handler
+	.callIfSuccess(<callBackAsParameter>)
+> In many cases, you only want to handle only success cases to make further callbacks before sending response to client. Calling this with a function (callback) as parameter that is called with the success result after processing. If in case an error found, then this callback will not be called, and error will directly sent to client
+
 #### Build once and handle at multiple places
 ```javascript
 function(req,res){
@@ -111,7 +115,6 @@ Option | Description | If found unset(false) | Type | Default | ValidOnlyIf
 `filterProperties` | To remove the fields in response that are critical when known to client eg password, some private key etc. | No fields will be removed | String containing space separated keys | false | success handler called
 `filterDepth` | to the depth in which the `filterProperties` will be searched to remove from the main success object. | Will only filterOut root properties | Integer(1-29) | 1 | `filterProperties` found
 `preProcessError` | If you want to modify/customize error object before sending to client. You get errorObject as first parameter and you should return modified errrorObject in function | Raw error will be sent | Function that returns modified error | MongoDB Unique entry preprocessor. If you are not using mongoDB, rest assured. In 99% cases it wont affect your error. | error handler called
-`callIfSuccess` | In many cases, you only want to handle only success cases to make further callbacks before sending response to client. Calling this with a function (callback) as parameter that is called with the success result after processing. If in case an error found, then this callback will not be called, and error will directly sent to client. | Normal process of sending to client will follow | Function that accept a callback as prameter | false | success handler called
 `preProcessSuccess` | same as `preProcessError` but for success cases. | Raw success data will be sent | Function returning modified success data | false | success handler called
 `attachement` | this gives filename of file that needed to be sent as attachement in the response. | Normal response will be sent | String or Function returning name of file as string | false | success handler called
 `noResponseBody` | to send no response body, only status required to be sent | normal response will be sent | Boolean | false | always valid
