@@ -20,6 +20,10 @@ module.exports = {
     return (this.isObject(req) && req.httpVersion && req.method && req.url);
   },
 
+  isJSError : function(err){
+    return (err instanceof Error);
+  },
+
   isValidResponse : function(res){
     return (this.isObject(res) && this.isFunction(res.send));
   },
@@ -88,7 +92,6 @@ module.exports = {
       var ignores = ignoreFields.trim().split(' ');
       var iterator = this.iterateInObject(function(obj) {
         if(obj && typeof obj === 'object') {
-          if(typeof obj.toJSON === 'function') obj = obj.toJSON();
           if(obj) {
             ignores.forEach(function(i){
               if(Object.prototype.hasOwnProperty.call(obj, i)){

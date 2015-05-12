@@ -36,6 +36,7 @@ var options = {
   logger : function(requestId, data, extra){
     console.log(requestId, data);
     if(extra !== undefined) console.log(extra);
+    if(util.isJSError(data)) console.log(data.stack);
   },
   headers : false
 };
@@ -56,6 +57,7 @@ options.preProcessError = function(err){
       default: return err;
     }
   }
+  if(util.isJSError(err)) return err.message;
   return err;
 };
 exports.options = options;
@@ -77,7 +79,6 @@ function ResponseBuilder(req, res, opts){
   else throw new Error('Response Builder : No response object found.!');
   var self = this;
   this.all = function(err,result,extra){
-    self.requestId = self.getRequestId(self.req);
     if(!result && self.noResultStatus){
       err = self.noResultError;
       self.errorStatus = self.noResultStatus;
@@ -89,6 +90,7 @@ function ResponseBuilder(req, res, opts){
 
 ResponseBuilder.prototype.error = function(err, code, status){
   var roe, inArgs = [code, status], ck, ak, bk, errorStatus, errorCode, addToError = {};
+  this.requestId = this.getRequestId(this.req);
   for(var ck in inArgs){
     if(inArgs[ck]){
       switch(typeof inArgs[ck]){
@@ -132,13 +134,14 @@ ResponseBuilder.prototype.error = function(err, code, status){
 };
 
 ResponseBuilder.prototype.success = function(result, extra){
+  if(util.isFunction(extra)) return extra(result);
   if(util.isFunction(this.successCallback)) return this.successCallback(result, extra);
-  this.filterOut(result);
-  if(util.isFunction(this.logger) && this.logLevel%2===1) this.logger(this.requestId, result, extra);
-  if(util.isFunction(this.preProcessSuccess)) result = this.preProcessSuccess(result);
+  this.requestId = this.getRequestId(this.req);
   if(!result) result = this.defaultSuccess;
   this.handleFour('successStatus');
-  if(util.isFunction(extra)) return extra(result);
+  if(util.isFunction(this.logger) && this.logLevel%2===1) this.logger(this.requestId, result, extra);
+  if(util.isFunction(this.preProcessSuccess)) result = this.preProcessSuccess(result);
+  this.filterOut(result);
   if(util.isString(this.successKey)){
     var newResult = {};
     newResult[this.successKey] = util.cloneObject(result);
