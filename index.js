@@ -115,7 +115,7 @@ ResponseBuilder.prototype.error = function(err, code, status){
     }
   };
   if(util.isFunction(this.logger) && this.logLevel > 1) this.logger(this.requestId, err);
-  if(util.isFunction(this.preProcessError)) err = util.getString(this.preProcessError, [err]);
+  if(util.isFunction(this.preProcessError)) err = this.preProcessError(err);
   if(err === '_d') err = this.defaultError;
   this.handleFour('errorStatus', errorStatus);
   if(util.isString(this.errorKey)){
