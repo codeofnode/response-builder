@@ -64,7 +64,7 @@ After with RB :
 > **This in turn calls `.error` handler or `.success` handler based on the values found of parameters.**
 
 #### Error handler
-	.error([<error>],[<onTheFlyStatusCodeORerrorCode>],[<onTheFlyAddingErrorData>])
+	.error([<error>],[<onTheFlyStatusCode>],[<onTheFlyErrorCode>])
 > Sometime you may want to send error back to client without having a callback. If called without any parameter, default error message will be sent with status 400.
 
 #### Success handler
@@ -140,8 +140,8 @@ Option | Description | If found unset(false) | Type | Default | ValidOnlyIf
 > You can set request/response specific options at build time.
 
 ### At error handler
-	Builder.error('some_error', statusCodeOrErrorCodeOnTheFly, onTheFlyAddToErrorObject)
-> Applicable only for error handler. These will be used when you are calling handler yourself without a handler. You may set the properties like statusCode/ErrorCode or to add some properties to error object on the fly.
+	Builder.error('some_error', statusCodeOnTheFly, ErrorCodeOnTheFly)
+> Applicable only for error handler. These will be used when you are calling handler yourself without a handler. You may set the properties like statusCode or ErrorCode.
 
 ## Examples
 
@@ -492,11 +492,13 @@ After with RB :
                  }
 
                  if (!user && info && info.locked) {
-                    return sendResponse.error(err, 403, { message : info.message || 'Account is locked.' }); //On the fly setting status 403 and adding `message` property on the fly to the error object just before sending to client
+                    sendResponse.addToError = { message : info.message || 'Account is locked.' };
+                    return sendResponse.error(err, 403); //On the fly setting status 403
                  }
 
                  if (!user) {
-                    return sendResponse.error(err, 401, { message : info && info.message || 'Incorrect login credentials.' });
+                    sendResponse.addToError = { message : info && info.message || 'Incorrect login credentials.' };
+                    return sendResponse.error(err, 401);
                  }
 
                 req.login(user, sendResponse.callIfSuccess(function(){

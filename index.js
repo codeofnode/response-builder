@@ -42,7 +42,7 @@ var options = {
 };
 
 options.preProcessError = function(err){
-  if(util.isObject(err) && err.code && err.err){
+  if(util.isObject(err,{allowJSError:true}) && err.code && err.err){
     //Preprocessing MongoDB unique error message, You may customize for your own requirement
     switch(err.code){
       case 11000:
@@ -53,11 +53,21 @@ options.preProcessError = function(err){
         } catch(ex){
           return 'Unique field already exists';
         }
-        break;
-      default: return err;
     }
   }
-  if(util.isJSError(err)) return err.message;
+  if(util.isJSError(err)){
+    //Preprocessing Mongoose errors, You may customize for your own requirement
+    if(util.isObject(err.errors,{allowEmpty : true})){
+      var errKeys = Object.keys(err.errors);
+      if(errKeys.length === 1){
+        var oneErr = err.errors[errKeys[0]];
+        if(oneErr.message && oneErr.path){
+          return err.message + ' at '+oneErr.path+' : ' + oneErr.message;
+        }
+      }
+    }
+    return err.message;
+  }
   return err;
 };
 exports.options = options;
@@ -89,18 +99,11 @@ function ResponseBuilder(req, res, opts){
 };
 
 ResponseBuilder.prototype.error = function(err, code, status){
-  var roe, inArgs = [code, status], ck, ak, bk, errorStatus, errorCode, addToError = {};
+  var roe, inArgs = [code, status], ck, ak, bk, errorStatus, errorCode;
   this.requestId = this.getRequestId(this.req);
   for(var ck in inArgs){
     if(inArgs[ck]){
       switch(typeof inArgs[ck]){
-        case 'object':
-          if(util.isObject(inArgs[ck])){
-            for(ak in inArgs[ck]){
-              addToError[ak] = inArgs[ck][ak];
-            }
-          }
-          break;
         case 'number':
           if(util.isValidHTTPStatus(inArgs[ck])){
             inArgs[ck] = Math.floor(inArgs[ck]);
@@ -171,16 +174,18 @@ ResponseBuilder.prototype.callIfSuccess = function(next){
   };
 };
 
-ResponseBuilder.prototype.adding = function(obj, arr){
+ResponseBuilder.prototype.adding = function(src, arr){
+  var cloned;
   arr.forEach(function(ae){
     if(util.isObject(ae)){
-      for(var bk in ae){
-        obj[bk] = ae[bk];
+      cloned = util.cloneObject(ae);
+      for(var bk in cloned){
+        src[bk] = cloned[bk];
       }
     }
   });
   if(util.isString(this.versionKey) && this.version){
-    obj[this.versionKey] = this.version;
+    src[this.versionKey] = this.version;
   }
 };
 
@@ -224,20 +229,6 @@ ResponseBuilder.prototype.attach = function(data, isJSON){
     this.res.setHeader('Content-Disposition', attachment);
     this.res.send(data);
   }
-};
-
-ResponseBuilder.prototype.extend = function(key,object){
-  if(util.isObject(key)){
-    object = key;
-    key = this;
-  } else if(util.isString(key) && util.isObject(object)){
-    key = this[key];
-  } else throw new Error('Response Builder : extend options not found.!');
-  if(util.isObject(key)){
-    for(var k in object){
-      key[k] = object[k];
-    }
-  } else throw new Error('Response Builder : Invalid propety selected to extend.!');
 };
 
 ResponseBuilder.prototype.fillHeaders = function(){

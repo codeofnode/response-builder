@@ -1,7 +1,8 @@
 module.exports = {
-  isObject : function(obj, allowEmpty, allowArrray, allowNull){
-    return ((typeof obj === 'object') && (allowNull || obj) &&
-        (allowArrray || !Array.isArray(obj)) && (allowEmpty || Object.keys(obj).length));
+  isObject : function(obj, opt){
+    if(!opt) opt = {};
+    return ((typeof obj === 'object') && (opt.allowNull || obj) && (opt.allowJSError || !this.isJSError(obj)) &&
+        (opt.allowArrray || !Array.isArray(obj)) && (opt.allowEmpty || Object.keys(obj).length));
   },
 
   isString : function(str, allowEmpty){
