@@ -7,7 +7,7 @@ exports.version = '0.0.1';
 var options = {
   errorKey : 'error',
   successKey : false,
-  extraKey : 'total',
+  extraKey : false,
   getRequestId : function(req){
     return new Date().getTime();
   },
@@ -126,7 +126,7 @@ ResponseBuilder.prototype.error = function(err, code, status){
     if(err) newError[this.errorKey] = util.cloneObject(err);
     err = newError;
     if(this.addRequestIdWhen > 1) err.requestId = this.requestId;
-    this.adding(err, [this.addToError, addToError]);
+    this.adding(err, [this.addToError]);
     if(util.isString(this.errorCodeKey) && (errorCode || this.errorCode)){
       var erc = util.getString((errorCode || this.errorCode), [err, this.req]);
       if(util.isString(erc)) err[this.errorCodeKey] = erc;
