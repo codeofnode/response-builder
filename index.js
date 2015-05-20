@@ -47,12 +47,7 @@ options.preProcessError = function(err){
     switch(err.code){
       case 11000:
       case 11001:
-        try {
-          var fieldName = err.err.substring(err.err.lastIndexOf('.$') + 2, err.err.lastIndexOf('_1'));
-          return fieldName.charAt(0).toUpperCase() + fieldName.slice(1) + ' already exists';
-        } catch(ex){
-          return 'Unique field already exists';
-        }
+        return 'Record already exists.';
     }
   }
   if(util.isJSError(err)){
