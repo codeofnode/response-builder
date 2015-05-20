@@ -50,7 +50,7 @@ After with RB :
 
 #### Builder with only response
 	var Builder = RB.build(res [,<options>]);
-> Widely used. As sending response does not require any request parameter. Options are used to provide run time parameters, explained in detail below
+> Widely used. As sending response does not require any request parameter. Options are used to provide run time parameters, explained in detail below. Further if `res` found to have property named `req` then (e.g. when using `express.io`), Builder automatically considers its `req` as `res.req`
 
 #### Builder with request as well as response
 	RB.build(req,res [,<options>])
@@ -99,7 +99,7 @@ In a node application, we can setup a middleware where we can build the `respons
     // for example, here i am setting extraKey, valid only for GET request otherwise false, that will auto put total no of records fetched in case of GET requests.
     // You can build the builder the way you want, passing other valid options from table below.
     res.RB = RB.build(req,res,{ extraKey : (req.method === 'GET' ? 'total' : false) });
-    // or if you want very simple, you can even do like this `res.RB = RB.build(res);` see builder section above. But that restrict flexibility of using RB a little
+    // or if you want very simple, you can even do like this `res.RB = RB.build(res);` see builder section above.
   });
 
 ```
@@ -113,7 +113,7 @@ Option | Description | If found unset(false) | Type | Default | ValidOnlyIf
 `errorKey` | Name of the key with which main error is associated in response. | Response body will only contain the error after preprocessing. | String | 'error' | Error Handler called
 `successKey` | Name of the key with which main success result is associated in response. | Response body will only contain the success object after preprocessing. | String | false | Success Handler called
 `extraKey` | The key in success response with which contains extra success data. (came with 3rd parmeter in `.all` or with 2nd parameter in `.success`). | Extra information will not get associated with response object | String | false | Success handler called
-`getRequestId` | This will link every response with unique `requestId` for future references. This is the function that return the requestId for a request. You just need to setup this function once globaly with `setOptions` function of `RB`, and will be called throughout the application whenever a `RB` being used. `req` can be found as first parameter if builder was built with `request` | `requestId` will not be linked | Function | Current TimeStamp in MS | (`errorKey` OR `successKey`) AND `addRequestIdWhen`
+`getRequestId` | This will link every response with unique `requestId` for future references. This is the function that return the requestId for a request. You just need to setup this function once globaly with `setOptions` function of `RB`, and will be called throughout the application whenever a `RB` being used. `req` can be found as first parameter if builder having property `req` | `requestId` will not be linked | Function | Current TimeStamp in MS | (`errorKey` OR `successKey`) AND `addRequestIdWhen`
 `addRequestIdWhen` | addRequestId constraints. 0 : never, 1 : only on success, 2 : only on error, 3 : always | `requestId` will not be linked | Integer[0-3] | 0 | `errorKey` or OR `successKey`
 `addToError` | Object which will get merged with the error response object | Nothing additional will be merged | Object | false | `errorKey`
 `addToSuccess` | Object which will get merged with the success response object | Nothing additional will be merged | Object | false | `successKey`

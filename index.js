@@ -266,6 +266,7 @@ exports.build = function(){
       res = args[1];
       opts = args[2];
   }
+  if(!req && util.isValidRequest(res.req)) req = res.req;
   return new ResponseBuilder(req, res, opts);
 };
 
