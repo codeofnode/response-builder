@@ -1,62 +1,96 @@
+'use strict';
+
 module.exports = {
-  isObject : function(obj, opt){
-    if(!opt) opt = {};
-    return ((typeof obj === 'object') && (opt.allowNull || obj) && (opt.allowJSError || !this.isJSError(obj)) &&
-        (opt.allowArrray || !Array.isArray(obj)) && (opt.allowEmpty || Object.keys(obj).length));
+  isValidNumber:function(input, addZero, allowDec){
+    var prev = String(input);
+    return Boolean(typeof input === 'number' && !(isNaN(input)) && (addZero || input > 0)
+        && (allowDec || (prev === String(parseInt(prev,10)))));
   },
 
-  isString : function(str, allowEmpty){
-    return ((typeof str === 'string') && (allowEmpty || str.length));
+  isValidString:function(input,allowEmpty){
+    return Boolean(typeof input === 'string' && (allowEmpty || input));
   },
 
-  isFunction : function(func){
-    return (typeof func === 'function');
+  stringify : function(input,pretty,defMsg){
+    if(this.isValidString(input,true)){
+      return input;
+    } else if(this.isValidObject(input,true,true)){
+      try {
+        return pretty ? JSON.stringify(input, undefined, 2) : JSON.stringify(input);
+      } catch(e) {
+        return this.isValidString(defMsg) ? defMsg : 'CIRCULAR_JSON_FOUND';
+      }
+    } else return String(input);
   },
 
-  isNumber : function(func){
-    return (typeof func === 'number');
+  isObjectEmpty : function(input){
+    return Boolean(typeof input === 'object' && input && !(Object.keys(input).length));
   },
 
-  isValidRequest : function(req){
-    return (this.isObject(req) && req.httpVersion && req.method && req.url);
+  walkInto : function(fun, root, obj, key, count, maxCount){
+    if(!this.isValidNumber(count)) {
+      if(this.isValidObject(fun,true,true) && typeof root === 'function'){
+        obj = fun; fun = root; root = null;
+        count = 0;
+        if(this.isValidNumber(obj)) maxCount = obj;
+      } else return;
+    }
+    if(typeof fun !== 'function') return;
+    if(!this.isValidNumber(maxCount)) maxCount = 999;
+    if(this.isValidObject(obj,true,true) && count < maxCount){
+      fun(obj, key, root, count);
+      count++;
+      var keys = Object.keys(obj);
+      for(var z=0,len=keys.length;z<len;z++){
+        this.walkInto.bind(this, fun, obj)(obj[keys[z]], keys[z], count, maxCount);
+      }
+    }
   },
 
-  isJSError : function(err){
-    return (err instanceof Error);
+  removeProperties : function(obj, ignoreFields,deep){
+    var ignores = ignoreFields.trim().split(' ');
+    var isObject = this.isValidObject.bind(this);
+    this.walkInto(obj, function(obj,key,root){
+      if(isObject(root) && ignores.indexOf(key) !== -1){
+        delete root[key];
+      }
+    },deep);
   },
 
-  isValidResponse : function(res){
-    return (this.isObject(res) && this.isFunction(res.send));
+  isFound : function(a){
+    return (a !== undefined && a !== null);
   },
 
-  isFound : function(res, what){
-    return this.isFunction(res[what]);
+  isValidObject : function(obj, allowEmpty, allowArray, allowNull){
+    return Boolean((typeof obj === 'object') && (allowNull || obj) &&
+      (allowArray || !Array.isArray(obj)) && (allowEmpty || Object.keys(obj).length));
   },
 
-  stringify : function(obj, pretty){
-    try {
-      if(pretty) return JSON.stringify(obj, null, pretty);
-      else return JSON.stringify(obj);
-    } catch(e) {
-      return obj;
+  cloneObject : function(input){
+    if(this.isValidObject(input,true,true)){
+      return this.getJSON(this.stringify(input));
+    } else {
+      return { vUtilError : 'INPUT_WAS_NOT_VALID_OBJECT' };
     }
   },
 
   isValidHTTPStatus : function(code){
-    return (code > 99 && code < 599); // assumed that in this range, it will be HTTP status code
+    return (this.isValidNumber(code) && code > 99 && code < 599); // assumed that in this range, it will be HTTP status code
   },
 
   isValidErrorCode : function(code){
-    return (code.indexOf(' ') !== -1); // assumed that without space, it will be a valid error code
+    return (this.isValidString(code) && code.indexOf(' ') !== -1); // assumed that without space, it will be a valid error code
+  },
+
+  isFunction : function(inp){
+    return typeof inp === 'function';
   },
 
   getString : function(input, args){
     if(this.isFunction(input)){
-      var x = input.apply(input, args);
-      if(this.isString(x)) return x;
-      else return input;
+      return this.stringify(input.apply(input, args));
     } else {
-      return input;
+      return this.stringify(input);
     }
   },
 
@@ -66,6 +100,26 @@ module.exports = {
 
   isPlainRequest: function(req){
     return req && ((/text\/plain/.test(req.headers['accept'])) || (/text\/plain/.test(req.headers['Accept'])));
+  },
+
+  copy : function(source,obj,over,func){
+    if(this.isValidObject(obj) && this.isValidObject(source,true)){
+      for(var key in obj){
+        if(obj.hasOwnProperty(key) && (over || !source.hasOwnProperty(key))
+            && (typeof func !== 'function' || func(obj[key]))){
+          source[key] = obj[key];
+        }
+      }
+    }
+  },
+
+  isValidResponse : function(res){
+    if(!this.isValidObject(res)) return false;
+    var checks = ['end','write','setHeader'], len = checks.length;
+    for(var z=0;z<len;z++){
+      if(!this.isFunction(res[checks[z]])) return false;
+    }
+    return false;
   },
 
   isHTMLRequest: function(req){
@@ -78,70 +132,5 @@ module.exports = {
     if(!req) return false;
     var ac = req.headers['accept'] || req.headers['Accept'];
     return (/application\/xml/.test(ac));
-  },
-
-  cloneObject : function(obj){
-    try {
-      return JSON.parse(JSON.stringify(obj));
-    } catch (e){
-      return false;
-    }
-  },
-
-  removeProperties : function(obj, ignoreFields, deep){
-    if(obj && typeof(obj) === 'object' && typeof(ignoreFields) === 'string') {
-      var ignores = ignoreFields.trim().split(' ');
-      var iterator = this.iterateInObject(function(obj) {
-        if(obj && typeof obj === 'object') {
-          if(obj) {
-            ignores.forEach(function(i){
-              if(Object.prototype.hasOwnProperty.call(obj, i)){
-                delete obj[i];
-              }
-            });
-          }
-        }
-        return obj;
-      });
-      return iterator(obj, deep);
-    } else return obj;
-  },
-
-  iterateInObject : function(fun){
-    return function(obj, deep){
-      if(obj && typeof(obj) === 'object') {
-        var scan = function(o, w) {
-          if(Array.isArray(o)) {
-            for(var index = 0; index < o.length; index++) {
-              o[index] = forEachObject(o[index]);
-              scan(o[index], w);
-            }
-          } else if(o && typeof o === 'object') {
-            for(var k in o) {
-              o = forEachObject(o);
-              if(w < (deep-1)) {
-                w++;
-                scan(o[k], w);
-                w--;
-              }
-            }
-          }
-        };
-        var forEachObject = function(o) {
-          if(Array.isArray(o)) {
-            for(var index = 0; index < o.length; index++) {
-              o[index] = fun(o[index]);
-            }
-          } else if(o instanceof Object) {
-            o = fun(o);
-          }
-          return o;
-        };
-        if(typeof deep !== 'number' || deep < 1 || deep > 29) deep = 1; // removing upto max 19(fair enough) deep properties
-        obj = forEachObject(obj);
-        scan(obj, 1);
-      }
-      return obj;
-    };
   }
 };

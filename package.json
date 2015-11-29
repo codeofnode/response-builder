@@ -1,7 +1,7 @@
 {
   "name": "rb",
   "description": "Building nodejs response with ease",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "keywords": [
     "response",
     "builder",
@@ -26,14 +26,13 @@
       "url": "http://www.opensource.org/licenses/MIT"
     }
   ],
-  "main": "index",
   "homepage": "https://github.com/codeofnode/response-builder",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": {
     "name": "Ramesh Kumar",
-    "email": "goods.ramesh@gmail.com"
+    "email": "codeofnode@gmail.com"
   },
   "license": "MIT"
 }

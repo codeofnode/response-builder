@@ -14,7 +14,7 @@
 
 ## Install
 
-    npm install rb -g
+    npm install rb
 
 ## How to use
 
