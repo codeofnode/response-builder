@@ -66,14 +66,6 @@ module.exports = {
       (allowArray || !Array.isArray(obj)) && (allowEmpty || Object.keys(obj).length));
   },
 
-  cloneObject : function(input){
-    if(this.isValidObject(input,true,true)){
-      return this.getJSON(this.stringify(input));
-    } else {
-      return { vUtilError : 'INPUT_WAS_NOT_VALID_OBJECT' };
-    }
-  },
-
   isValidHTTPStatus : function(code){
     return (this.isValidNumber(code) && code > 99 && code < 599); // assumed that in this range, it will be HTTP status code
   },
