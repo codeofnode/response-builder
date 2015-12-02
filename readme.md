@@ -50,7 +50,7 @@ After with RB :
 
 #### Builder with only response
 	var Builder = RB.build(res [,<options>]);
-> Widely used. As sending response does not require any request parameter. Options are used to provide run time parameters, explained in detail below. Further if `res` found to have property named `req` then (e.g. when using `express.io`), Builder automatically considers its `req` as `res.req`
+> Widely used. As sending response does not require any request parameter. Options are used to provide run time parameters, explained in detail below.
 
 #### Builder with request as well as response
 	RB.build(req,res [,<options>])
@@ -75,6 +75,8 @@ After with RB :
 #### Callback handler
 	.callIfSuccess(<callBackAsParameter>)
 > In many cases, you only want to handle only success cases to make further callbacks before sending response to client. Calling this with a function (callback) as parameter that is called with the success result after processing. If in case an error found, then this callback will not be called, and error will directly sent to client
+
+## -------> There is little changes in APIs wef version 0.1.9. I will update this README.md very soon. Or there may be some external link for APIs. Stay tuned.
 
 #### Build once and handle at multiple places
 ```javascript
