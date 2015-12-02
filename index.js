@@ -45,7 +45,7 @@ var options = {
 
 var allowedOptions = Object.keys(options);
 var isValidOption = function(opt){
-  return util.isValidString(opt) && allowedOptions.indexOf(opt) !== -1;
+  return util.isString(opt) && allowedOptions.indexOf(opt) !== -1;
 };
 
 exports.util = util;
@@ -83,13 +83,13 @@ ResponseBuilder.prototype.error = function(err, code, status){
   else if(err instanceof Error) err = err.message;
   this.handleFour('errorStatus');
   vare newError = false;
-  if(util.isValidString(this.errorKey)){
+  if(util.isString(this.errorKey)){
     newError = {};
     newError[this.errorKey] = err;
     if(this.addRequestIdWhen > 1) newError.requestId = this.requestId;
     util.copy(newError, this.addToError);
     this.addVersion(newError);
-    if(util.isValidString(this.errorCodeKey) && this.errorCode){
+    if(util.isString(this.errorCodeKey) && this.errorCode){
       newError[this.errorCodeKey] = util.getString(this.errorCode, [err, this.req]);
     }
   }
@@ -97,7 +97,7 @@ ResponseBuilder.prototype.error = function(err, code, status){
 };
 
 ResponseBuilder.prototype.addVersion = function(obj){
-  if(util.isValidString(this.versionKey) && this.appVersion){
+  if(util.isString(this.versionKey) && this.appVersion){
     obj[this.versionKey] = this.appVersion;
   }
 };
@@ -111,7 +111,7 @@ ResponseBuilder.prototype.success = function(result, extra){
   if(util.isFunction(this.logger) && this.logLevel%2===1) this.logger(this.requestId, result, extra);
   if(util.isFunction(this.preProcessSuccess)) result = this.preProcessSuccess(result);
   var newResult = false;
-  if(util.isValidString(this.successKey)){
+  if(util.isString(this.successKey)){
     newResult = {};
     newResult[this.successKey] = result;
     if(this.addRequestIdWhen%2===1) newResult.requestId = this.requestId;
@@ -164,7 +164,7 @@ ResponseBuilder.prototype.setType = function(){
 
 ResponseBuilder.prototype.attach = function(data){
   var fname = util.getString(this.attachFile, [data, this.req]);
-  if(!util.isValidString(fname)) fname = 'attachement';
+  if(!util.isString(fname)) fname = 'attachement';
   var attchment = 'attachement; filename="' + fname + '"';
   this.res.setHeader('Content-Disposition', attachment);
   this.res.end(util.stringify(data,true));
