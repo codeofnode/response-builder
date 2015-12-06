@@ -44,8 +44,8 @@ var options = {
 };
 
 var allowedOptions = Object.keys(options);
-var isValidOption = function(opt){
-  return util.isString(opt) && allowedOptions.indexOf(opt) !== -1;
+var isValidOption = function(opt, key){
+  return util.isString(key) && allowedOptions.indexOf(key) !== -1;
 };
 
 exports.util = util;
@@ -68,7 +68,7 @@ ResponseBuilder.prototype.all = function(err, result, extra){
 };
 
 ResponseBuilder.prototype.error = function(err, code, status){
-  this.requestId = this.getRequestId(this.req);
+  this.fillRequestId();
   if(util.isValidHTTPStatus(code)){
     this.statusCode = code;
   } else if(util.isValidErrorCode(code)){
@@ -82,11 +82,11 @@ ResponseBuilder.prototype.error = function(err, code, status){
   if(err === this.defaultErrorKey) err = this.defaultError;
   else if(err instanceof Error) err = err.message;
   this.handleFour('errorStatus');
-  vare newError = false;
+  var newError = false;
   if(util.isString(this.errorKey)){
     newError = {};
     newError[this.errorKey] = err;
-    if(this.addRequestIdWhen > 1) newError.requestId = this.requestId;
+    if(this.addRequestIdWhen > 1 && util.isFound(this.requestId)) newError.requestId = this.requestId;
     util.copy(newError, this.addToError);
     this.addVersion(newError);
     if(util.isString(this.errorCodeKey) && this.errorCode){
@@ -102,10 +102,16 @@ ResponseBuilder.prototype.addVersion = function(obj){
   }
 };
 
+ResponseBuilder.prototype.fillRequestId = function(){
+  if(util.isFunction(this.getRequestId)){
+    this.requestId = this.getRequestId(this.req);
+  }
+};
+
 ResponseBuilder.prototype.success = function(result, extra){
   if(util.isFunction(extra)) return extra(result);
   if(util.isFunction(this.successCallback)) return this.successCallback(result, extra);
-  this.requestId = this.getRequestId(this.req);
+  this.fillRequestId();
   if(!result) result = this.defaultSuccess;
   this.handleFour('successStatus');
   if(util.isFunction(this.logger) && this.logLevel%2===1) this.logger(this.requestId, result, extra);
@@ -114,7 +120,7 @@ ResponseBuilder.prototype.success = function(result, extra){
   if(util.isString(this.successKey)){
     newResult = {};
     newResult[this.successKey] = result;
-    if(this.addRequestIdWhen%2===1) newResult.requestId = this.requestId;
+    if(this.addRequestIdWhen%2===1 && util.isFound(this.requestId)) newResult.requestId = this.requestId;
     util.copy(newResult, this.addToSuccess);
     this.addVersion(newResult);
     if(util.isFound(extra) && util.isString(this.extraKey)){
@@ -127,13 +133,13 @@ ResponseBuilder.prototype.success = function(result, extra){
   else this.res.end(util.stringify(last),util.getString(this.responseEncoding, [this.req]));
 };
 
-var callIfSuccess = function(err,success,extra){
+var callIfSuccess = function(next,err,success,extra){
   if(err) this.error(err,success,extra);
   else this.success(success,next);
 };
 
 ResponseBuilder.prototype.callIfSuccess = function(next){
-  return callIfSuccess.bind(this);
+  return callIfSuccess.bind(this,next);
 };
 
 ResponseBuilder.prototype.handleFour = function(statusType){

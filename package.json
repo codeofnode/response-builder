@@ -1,7 +1,7 @@
 {
   "name": "rb",
   "description": "Building nodejs response with ease",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "keywords": [
     "response",
     "builder",
@@ -19,8 +19,8 @@
   "engines": {
     "node": ">=0.6.0"
   },
-  "dependencies" : {
-    "petu" : "0.0.1"
+  "dependencies": {
+    "petu": "0.0.2"
   },
   "licenses": [
     {

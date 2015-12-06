@@ -5,20 +5,20 @@ var petu = require('petu');
 var toExport = {
 
   isValidHTTPStatus : function(code){
-    return (this.isValidNumber(code) && code > 99 && code < 599); // assumed that in this range, it will be HTTP status code
+    return (petu.isNumber(code) && code > 99 && code < 599); // assumed that in this range, it will be HTTP status code
   },
 
   isValidErrorCode : function(code){
-    return (this.isValidString(code) && code.indexOf(' ') !== -1); // assumed that without space, it will be a valid error code
+    return (petu.isString(code) && code.indexOf(' ') !== -1); // assumed that without space, it will be a valid error code
   },
 
   isValidResponse : function(res){
-    if(!this.isValidObject(res)) return false;
+    if(!petu.isObject(res)) return false;
     var checks = ['end','write','setHeader'], len = checks.length;
     for(var z=0;z<len;z++){
-      if(!this.isFunction(res[checks[z]])) return false;
+      if(!petu.isFunction(res[checks[z]])) return false;
     }
-    return false;
+    return true;
   },
 
   isHTMLRequest: function(req){
