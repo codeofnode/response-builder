@@ -87,7 +87,7 @@ ResponseBuilder.prototype.error = function(err, code, status){
     newError = {};
     newError[this.errorKey] = err;
     if(this.addRequestIdWhen > 1 && util.isFound(this.requestId)) newError.requestId = this.requestId;
-    util.copy(newError, this.addToError);
+    util.copy(newError, this.addToError, false);
     this.addVersion(newError);
     if(util.isString(this.errorCodeKey) && this.errorCode){
       newError[this.errorCodeKey] = util.getString(this.errorCode, [err, this.req]);
@@ -121,7 +121,7 @@ ResponseBuilder.prototype.success = function(result, extra){
     newResult = {};
     newResult[this.successKey] = result;
     if(this.addRequestIdWhen%2===1 && util.isFound(this.requestId)) newResult.requestId = this.requestId;
-    util.copy(newResult, this.addToSuccess);
+    util.copy(newResult, this.addToSuccess, false);
     this.addVersion(newResult);
     if(util.isFound(extra) && util.isString(this.extraKey)){
       result[this.extraKey] = extra;
@@ -190,7 +190,7 @@ ResponseBuilder.prototype.filterOut = function(input){
 exports.build = function(req,res,opts){
   var _opts = {};
   if(util.isValidResponse(req)){
-     util.copy(_opts,res,false,isValidOption);
+     util.copy(_opts,res,null,isValidOption);
      res = req; req = null;
   }
   return new ResponseBuilder(req, res, _opts);
