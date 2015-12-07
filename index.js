@@ -51,7 +51,7 @@ var isValidOption = function(opt, key){
 exports.util = util;
 
 function ResponseBuilder(req,res,opts){
-  util.copy(this,options,null,isValidOption);
+  util.copy(this,options,isValidOption);
   util.copy(this,opts,true);
   this.req = req;
   if(util.isValidResponse(res)) this.res = res;
@@ -190,7 +190,7 @@ ResponseBuilder.prototype.filterOut = function(input){
 exports.build = function(req,res,opts){
   var _opts = {};
   if(util.isValidResponse(req)){
-     util.copy(_opts,res,null,isValidOption);
+     util.copy(_opts,res,isValidOption);
      res = req; req = null;
   }
   return new ResponseBuilder(req, res, _opts);
