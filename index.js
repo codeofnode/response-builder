@@ -124,7 +124,7 @@ ResponseBuilder.prototype.success = function(result, extra){
     util.copy(newResult, this.addToSuccess, false);
     this.addVersion(newResult);
     if(util.isFound(extra) && util.isString(this.extraKey)){
-      result[this.extraKey] = extra;
+      newResult[this.extraKey] = extra;
     }
   }
   var last = newResult || result;

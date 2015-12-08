@@ -43,7 +43,7 @@ var toExport = {
 
 };
 
-var vendor = ['isString','copy','isFunction','getString','stringify','isFound','walkInto','removeProperties'];
+var vendor = ['isString','isNumber','isObject','copy','isFunction','getString','stringify','isFound','walkInto','removeProperties'];
 vendor.forEach(function(path){
   toExport[path] = petu[path].bind(petu.petu);
 });
