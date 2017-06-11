@@ -76,12 +76,10 @@ After with RB :
 	.callIfSuccess(<callBackAsParameter>)
 > In many cases, you only want to handle only success cases to make further callbacks before sending response to client. Calling this with a function (callback) as parameter that is called with the success result after processing. If in case an error found, then this callback will not be called, and error will directly sent to client
 
-## -------> There is little changes in APIs wef version 0.1.9. I will update this README.md very soon. Or there may be some external link for APIs. Stay tuned.
-
 #### Build once and handle at multiple places
 ```javascript
 function(req,res){
-	var Builder = RB.build(req[,<runTimeOptions>]);
+	var Builder = RB.build(req,res[,<runTimeOptions>]);
 	//...
 	someFunctionCallingWithCallBack(Builder.all);
 	//...
@@ -93,7 +91,7 @@ function(req,res){
 >In some cases we want to handle response for many places that deal with same request/response. In such cases we can build the builder once and use throught the that route function.
 
 ## Best Practice
-In a node application, we can setup a middleware where we can build the `responseBuilder` and associate it with res. eg.
+In a express like application, we can setup a middleware where we can build the `responseBuilder` and associate it with res. eg.
 ```javascript
   // example of setup middleware, (considering express.io being used)
   app.use(function(req,res,next){
@@ -119,21 +117,20 @@ Option | Description | If found unset(false) | Type | Default | ValidOnlyIf
 `addRequestIdWhen` | addRequestId constraints. 0 : never, 1 : only on success, 2 : only on error, 3 : always | `requestId` will not be linked | Integer[0-3] | 0 | `errorKey` or OR `successKey`
 `addToError` | Object which will get merged with the error response object | Nothing additional will be merged | Object | false | `errorKey`
 `addToSuccess` | Object which will get merged with the success response object | Nothing additional will be merged | Object | false | `successKey`
-`defaultSuccess` | In case of falsy value in successResult, this will will be the raw error. | Raw input will be used | String | 'Operation was successfull..!' | `successKey`
-`defaultError` | In case of falsy value in error, this will will be the raw error. | Raw input will be used | String | 'Ohh..! We experienced an unknown glitch..!' | `errorKey`
-`type` | RB first try to find if `req` and its `Accept` header found. If not so, this one determines what  default `Content-Type` header to be sent. | will not set any `Content-Type` | String | 'application/json' | Either `req` not found or its `Accept` is not amongs `xml`, `html` or `plain`
+`defaultSuccess` | In case of falsy value in successResult, this will will be the raw error. | Raw input will be used | String | 'SUCCESS' | `successKey`
+`defaultError` | In case of falsy value in error, this will will be the raw error. | Raw input will be used | String | 'SOME_UNKNOWN_ERROR' | `errorKey`
+`responseType` | RB first try to find if `req` and its `Accept` header found. If not so, this one determines what  default `Content-Type` header to be sent. | will not set any `Content-Type` | String | 'application/json' | Either `req` not found or its `Accept` is not amongs `xml`, `html` or `plain`
 `successStatus` | Success status sode to be sent | 304 | Integer(100-600)  | 200 | Success Handler Called
 `errorStatus` | Error status sode to be sent | 304 | Integer(100-600)  | 400 | Error Handler Called
 `errorCode` | These are the custom/application error code. So that if end user find this error code in response, one may refer some error code ref page and find reason and how to get rid of that error. | No error code will be set | String without space  | false | `errorKey` and Error handler called
 `errorCodeKey` | with which key errorCode to be associated in error object | String  | 'errorCode' | false | `errorCode` is set and error handler called
 `noResultStatus` | What status code to be sent if none of error and successResult found | 304 | Integer(100-600)  | 404 | none of error or successResult found
-`noResultError` | What Error message to be sent if none of error and successResult found | if `noResultStatus` found and `noResultError` not found, response will be send without body | String  | 'Record not found' | `noResultStatus`
+`noResultError` | What Error message to be sent if none of error and successResult found | if `noResultStatus` found and `noResultError` not found, response will be send without body | String  | 'RECORD_NOT_FOUND' | `noResultStatus`
 `successCallback` | Builder will build the successObject and then handler will call this function instead of sending to client. Usefull in cases when you want to perform nested database operations before sending final response | Response will be sent to client | Function that get successResult as first parameter  | false | success handler called
 `filterProperties` | To remove the fields in response that are critical when known to client eg password, some private key etc. | No fields will be removed | String containing space separated keys | false | success handler called
-`filterDepth` | to the depth in which the `filterProperties` will be searched to remove from the main success object. | Will only filterOut root properties | Integer(1-29) | 1 | `filterProperties` found
 `preProcessError` | If you want to modify/customize error object before sending to client. You get errorObject as first parameter and you should return modified errrorObject in function | Raw error will be sent | Function that returns modified error | MongoDB Unique entry preprocessor. If you are not using mongoDB, rest assured. In 99% cases it wont affect your error. | error handler called
 `preProcessSuccess` | same as `preProcessError` but for success cases. | Raw success data will be sent | Function returning modified success data | false | success handler called
-`attachement` | this gives filename of file that needed to be sent as attachement in the response. | Normal response will be sent | String or Function returning name of file as string | false | success handler called
+`attachFile` | this gives filename of file that needed to be sent as attachement in the response. | Normal response will be sent | String or Function returning name of file as string | false | success handler called
 `noResponseBody` | to send no response body, only status required to be sent | normal response will be sent | Boolean | false | always valid
 `version` | you may like to send version information of the api client is using. You just need to set version globaly with `setOptions` function of `RB`, and will be saved throughout the application. This field represents the version information. | no version field will be sent | String | false | `errorKey` or `successKey` is set
 `versionKey` | the key with which version info to be associated | No version info will be send | String | 'version' | `version` option is set

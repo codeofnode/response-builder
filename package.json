@@ -1,7 +1,11 @@
 {
   "name": "rb",
+  "version": "0.2.0",
   "description": "Building nodejs response with ease",
-  "version": "0.1.14",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/codeofnode/response-builder.git"
+  },
   "keywords": [
     "response",
     "builder",
@@ -9,32 +13,10 @@
     "error",
     "logger"
   ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/codeofnode/response-builder.git"
-  },
+  "author": "Ramesh Kumar <codeofnode@gmail.com>",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/codeofnode/response-builder/issues"
   },
-  "engines": {
-    "node": ">=0.6.0"
-  },
-  "dependencies": {
-    "petu": "0.0.9"
-  },
-  "licenses": [
-    {
-      "type": "MIT",
-      "url": "http://www.opensource.org/licenses/MIT"
-    }
-  ],
-  "homepage": "https://github.com/codeofnode/response-builder",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": {
-    "name": "Ramesh Kumar",
-    "email": "codeofnode@gmail.com"
-  },
-  "license": "MIT"
+  "homepage": "https://github.com/codeofnode/response-builder#readme"
 }
