@@ -54,6 +54,14 @@ var _callIfSuccess = function callIfSuccess(next, err, success, extra) {
   if (err) this.error(err, success, extra);else this.success(success, next);
 };
 
+var all = function all(err, result, extra) {
+  if (err) {
+    this.error(err, result, extra);
+  } else if (util.notExists(result) && this.noResultStatus) {
+    this.error(this.noResultError, this.noResultStatus, extra);
+  } else this.success(result, extra);
+};
+
 var RbError = function (_Error) {
   _inherits(RbError, _Error);
 
@@ -154,15 +162,6 @@ var ResponseBuilder = function () {
       if (!util.isString(fname)) fname = 'attachement';
       this.res.setHeader('Content-Disposition', 'attachement; filename="' + fname + '"');
       return util.stringify(data, true);
-    }
-  }, {
-    key: 'all',
-    value: function all(err, result, extra) {
-      if (err) {
-        this.error(err, result, extra);
-      } else if (util.notExists(result) && this.noResultStatus) {
-        this.error(this.noResultError, this.noResultStatus, extra);
-      } else this.success(result, extra);
     }
   }, {
     key: 'error',
@@ -268,7 +267,9 @@ exports.build = function (req, res, opts) {
     rs = req;
     rq = null;
   }
-  return new ResponseBuilder(rq, rs, os);
+  var ins = new ResponseBuilder(rq, rs, os);
+  ins.all = all.bind(ins);
+  return ins;
 };
 
 exports.setOptions = function (opts) {
