@@ -50,9 +50,9 @@ var options = {
 
 var AllowedOptions = Object.keys(options);
 
-function _callIfSuccess(next, err, success, extra) {
+var _callIfSuccess = function callIfSuccess(next, err, success, extra) {
   if (err) this.error(err, success, extra);else this.success(success, next);
-}
+};
 
 var RbError = function (_Error) {
   _inherits(RbError, _Error);
@@ -158,12 +158,11 @@ var ResponseBuilder = function () {
   }, {
     key: 'all',
     value: function all(err, result, extra) {
-      var er = err;
-      if (util.notExists(result) && this.noResultStatus) {
-        er = this.noResultError;
-        this.errorStatus = this.noResultStatus;
-      }
-      if (er) this.error(er, result, extra);else this.success(result, extra);
+      if (err) {
+        this.error(err, result, extra);
+      } else if (util.notExists(result) && this.noResultStatus) {
+        this.error(this.noResultError, this.noResultStatus, extra);
+      } else this.success(result, extra);
     }
   }, {
     key: 'error',
@@ -171,11 +170,11 @@ var ResponseBuilder = function () {
       var er = err;
       this.fillRequestId();
       if (ResponseBuilder.isValidHTTPStatus(code)) {
-        this.statusCode = code;
+        this.errorStatus = code;
       } else if (ResponseBuilder.isValidErrorCode(code)) {
         this.errorCode = code;
         if (ResponseBuilder.isValidHTTPStatus(status)) {
-          this.statusCode = status;
+          this.errorStatus = status;
         }
       }
       if (typeof this.logger === 'function' && this.logLevel > 1) this.logger(this.requestId, er);

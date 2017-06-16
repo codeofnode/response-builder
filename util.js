@@ -45,8 +45,8 @@ exports.getString = function getString(input) {
   return typeof input === 'function' ? input(args) : stringify(input);
 };
 
-exports.isNested = function (obj, depth) {
-  return depth < 99 && (typeof obj === 'undefined' ? 'undefined' : _typeof(obj)) === 'object' && obj !== null && obj.$W_END !== true;
+exports.getNested = function (obj, depth) {
+  return depth < 99 && (typeof obj === 'undefined' ? 'undefined' : _typeof(obj)) === 'object' && obj !== null && obj.$W_END !== true ? obj : false;
 };
 
 var walkInto = function walkInto(fun, rt, obj, key) {
@@ -54,8 +54,8 @@ var walkInto = function walkInto(fun, rt, obj, key) {
   var isLast = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : true;
 
   fun(obj, key, rt, depth, isLast);
-  if (exports.isNested(obj, depth)) {
-    var ob = rt ? rt[key] : obj;
+  var ob = exports.getNested(obj, depth);
+  if (ob) {
     var kys = Object.keys(ob);
     var lastln = kys.length;
     var deep = depth + 1;
